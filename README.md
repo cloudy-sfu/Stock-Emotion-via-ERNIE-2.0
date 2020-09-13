@@ -4,9 +4,7 @@
 ![](https://img.shields.io/badge/dependencies-eastmoney.com-blue)
 ![](https://img.shields.io/badge/dependencies-paddlepaddle-blue)
 
-This repository is a research, with comments from `eastmoney.com`, to evaluate the strength of 
-people's positive or negative sentiment towards a certain stock. The outline of this research 
-is as follows.
+This repository is a research, with comments from `eastmoney.com`, to evaluate the strength of people's positive or negative sentiment towards a certain stock. The outline of this research is as follows.
 
 ## Acknowledges
 [SKEP model](https://www.paddlepaddle.org.cn/hubdetail?name=ernie_skep_sentiment_analysis&en_category=SentimentAnalysis)
@@ -17,40 +15,26 @@ is as follows.
 
 ## 1. Data pre-processing
 ### 1.1. Collect the list of comments
-Run `post_panel.py`, setting `n_pages`, creating an empty folder `posts_raw` to store the results, 
-and use the list of `data/000905closeweight.xlsx`. This script allows me to get the list of 
-comments.
+Run `post_panel.py`, setting `n_pages`, creating an empty folder `posts_raw` to store the results, and use the list of `data/000905closeweight.xlsx`. This script allows me to get the list of comments.
 
-Then, run `concat_raw_panels.py` to concatenate these lists into a single table. In the table, I 
-filter the comments with some rules, which are recorded at sheet `description`. The results are 
-saved in `data/db_1_panel.xlsx`.
+Then, run `concat_raw_panels.py` to concatenate these lists into a single table. In the table, I filter the comments with some rules, which are recorded at sheet `description`. The results are saved in `data/db_1_panel.xlsx`.
 
 ### 1.2. Collect the information of authors of the comments
-Run `post_author.py` to get the ids of authors from `data/db_1_panel.xlsx`, and collect 4 attributes
-of each author (follower, following, number of visits to his/her homepage of all time, 
-that of today), where the data not available are filled with `None`. The results are saved to a 
-temporary file.
+Run `post_author.py` to get the ids of authors from `data/db_1_panel.xlsx`, and collect 4 attributes of each author (follower, following, number of visits to his/her homepage of all time, that of today), where the data not available are filled with `None`. The results are saved to a temporary file.
 
 ### 1.3. Collect the main body of the comments
-Run `post_content.py` to get the hyperlink of comments. Due to the `eastmoney.com`'s limitation to 
-robots, I cannot get all comments. Instead, ads and promotions are collected.
+Run `post_content.py` to get the hyperlink of comments. Due to the `eastmoney.com`'s limitation to robots, I cannot get all comments. Instead, ads and promotions are collected.
 
-Firstly, I store all of them to a temporary file. Secondly, I use regex to replace the elements
-that are not real comments with `None`. The patterns of ads and promotions are like:
+Firstly, I store all of them to a temporary file. Secondly, I use regex to replace the elements that are not real comments with `None`. The patterns of ads and promotions are like:
 ```
 [下载查看原文]    'NoneType'    HTTPSError    今日(6月30日)
 ```
 and blanks.
 
-It should to be noticed that, since I need to concatenate the info of authors, main body and other
-info in the comments list, I just replace unexpected data to `None` instead of deleting them.
-As a result, the length of each table is the same.
+It should to be noticed that, since I need to concatenate the info of authors, main body and other info in the comments list, I just replace unexpected data to `None` instead of deleting them. As a result, the length of each table is the same.
 
 ### 1.4. Generate the clean data table
-I concatenate the 3 files, and drop the absent values (including `None` just assigned). In 
-addition, I manually filter the table with some rules, which are recorded at `description` sheet 
-either. A column `stock` is added, according to the principle of hyperlink of the man body of each
-comment. Specifically speaking, the hyperlink follows
+I concatenate the 3 files, and drop the absent values (including `None` just assigned). In addition, I manually filter the table with some rules, which are recorded at `description` sheet either. A column `stock` is added, according to the principle of hyperlink of the man body of each comment. Specifically speaking, the hyperlink follows
 ```
 https://guba.eastmoney.com/news,[stock code],[a random integer].html
 ```
@@ -72,35 +56,21 @@ The filtered data table is `data/db_2_full.xlsx`.
 
 ## 2. Nature language processing
 ### 2.1. Introduction of the pre-trained model
-In this section, I use SKEP model and porn detection model to draw out the emotion contained in 
-comments. To recurrent the results, you need to install it. It is adopted to predict whether the 
-attitude of each comment is positive or negative.
+In this section, I use SKEP model and porn detection model to draw out the emotion contained in comments. To recurrent the results, you need to install it. It is adopted to predict whether the attitude of each comment is positive or negative.
 
-Note: Since the training of NLP models is expensive and time-consuming, meanwhile I have limited
-financial support, I choose to use pre-trained model released by Baidu PaddlePaddle. All the 
-results is based on the trust to the accuracy and scientific of SKEP model.
+Note: Since the training of NLP models is expensive and time-consuming, meanwhile I have limited financial support, I choose to use pre-trained model released by Baidu PaddlePaddle. All the results is based on the trust to the accuracy and scientific of SKEP model.
 
 ### 2.2. Fix the packages
-For computers with GPU, the original package requires GPU device name to be added to environment 
-variables. It bothers, so I simplify it. To make use of it, replace 
-`~/.paddlehub/modules/ernie_skep_sentiment_analysis/module.py`
-with `package_fixed/skep/module.py`.
+For computers with GPU, the original package requires GPU device name to be added to environment variables. It bothers, so I simplify it. To make use of it, replace `~/.paddlehub/modules/ernie_skep_sentiment_analysis/module.py` with `package_fixed/skep/module.py`.
 
 ### 2.3. Usage
-Run `senta_1.py` to use this model to process natural language. I use the model to scale 
-the degree of optimistic attitude in each comment. The result is saved as a column added to 
-the data table in section 1.4. It ranges from 0 to 1, which means the probability that a sample 
-is positive. High value indicates the sample is more optimistic.
+Run `senta_1.py` to use this model to process natural language. I use the model to scale the degree of optimistic attitude in each comment. The result is saved as a column added to the data table in section 1.4. It ranges from 0 to 1, which means the probability that a sample is positive. High value indicates the sample is more optimistic.
 
 ## 3. Predict the stock price
 ### 3.1. Sampling
-The table `RESSET_QTTN_2016__1.xlsx` contains the price and trading amount of all stocks listed
-from July 1 to July 28, 2020. The date range of comments is from July 11 to July 27, 2020. The 
-price data has a little wider time range, so some features like "the rate of return of previous
-5 days" can be included.
+The table `RESSET_QTTN_2016__1.xlsx` contains the price and trading amount of all stocks listed from July 1 to July 28, 2020. The date range of comments is from July 11 to July 27, 2020. The price data has a little wider time range, so some features like "the rate of return of previous 5 days" can be included.
 
-Run `sampling.py` to extract the features. The result would be saved in `data/db_3_features.xlsx`.
-The table of features looks like:
+Run `sampling.py` to extract the features. The result would be saved in `data/db_3_features.xlsx`. The table of features looks like:
 
 |                | Attribute                                                    | Data Type |
 | -------------- | ------------------------------------------------------------ | --------- |
@@ -130,10 +100,17 @@ The table of features looks like:
 | p4ta           | Log trading amount of 2 days ago.                            | float     |
 | p5ta           | Log trading amount of 1 day ago.                             | float     |
 
-### 3.2. Significance test
-I build the unrestricted model and restricted model, to find out whether the attitudes weighted by 
-those attributes are significant in predicting the stock price. The tasks are separated into the 
-regression of open rate and the regression of close rate.
+### 3.2. Random forest model
+
+Run `close_prepare.py` to make the datasets, and run `close_rf_1.py` to use the random forest model.
+
+To perform the regressions mentioned above via random forest model are adopted and their results are compared. Bayes search with 5-fold cross validation is also adopted, and the optimal model is finally accepted. MSE is the metric to evaluate the performance of each model.
+
+The data is divided into 80% training set and 20% validation set, and the 5-fold cross validation  is constructed based on the training set.
+
+### 3.3. Significance test
+
+I build the unrestricted model and restricted model, to find out whether the attitudes weighted by those attributes are significant in predicting the stock price. The tasks are separated into the regression of open rate and the regression of close rate.
 
 For open rate:
 ```
@@ -146,24 +123,12 @@ UR: open_rate ~ att* + picr + pita
 R: open_rate ~ picr + pita
 ```
 
-Note: `pi` means the list from `p1` to `p5`, `att*` means the attitudes weighted by other 
-attributes.
+Note: `pi` means the list from `p1` to `p5`, `att*` means the attitudes weighted by other attributes.
 
-The F-statistic is used to test the significance. Because the heteroscedasticity has limited 
-effect on random forest models, so the F-statistic
+The F-statistic is used to test the significance. Because the heteroscedasticity has limited effect on random forest models, so the F-statistic
 $$F=\frac{(R_{ur}^2 - R_r^2)(n-k-1)}{(1-R_{ur}^2)q}$$
-is adopted to test the significance. In the equation q is the number of variables different 
-between UR and R models, and k is the number of variables in UR model. Although $R^2$ is defined 
-in linear models, as the documentation of random forest regressor introduced, the `score` method 
-of it returns $R^2$. And this metric is adopted in this research.
+is adopted to test the significance. In the equation q is the number of variables different between UR and R models, and k is the number of variables in UR model. Although $R^2$ is defined in linear models, as the documentation of random forest regressor introduced, the `score` method of it returns $R^2$. And this metric is adopted in this research.
 
 Todo: Estimate the effect, which the heteroscedasticity contributes to random forest models.
 
-### 3.3. Random forest model
-To perform the regressions mentioned above, the random forest model, xgboost model and lgboost 
-model are adopted and their results are compared. Bayes search with 5-fold cross validation is 
-also adopted, and the optimal model is finally accepted. MSE is the metric to evaluate the 
-performance of each model.
-
-The data is divided into 80% training set and 20% validation set, and the 5-fold cross validation 
-is constructed based on the training set.
+Run `close_estimate.py` to perform the F-stats test.
