@@ -11,6 +11,10 @@ is as follows.
 ## Acknowledges
 [SKEP model](https://www.paddlepaddle.org.cn/hubdetail?name=ernie_skep_sentiment_analysis&en_category=SentimentAnalysis)
 
+[random forest regressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor.score)
+
+[Bayes search](https://scikit-optimize.github.io/stable/modules/generated/skopt.BayesSearchCV.html)
+
 ## 1. Data pre-processing
 ### 1.1. Collect the list of comments
 Run `post_panel.py`, setting `n_pages`, creating an empty folder `posts_raw` to store the results, 
@@ -147,8 +151,11 @@ attributes.
 
 The F-statistic is used to test the significance. Because the heteroscedasticity has limited 
 effect on random forest models, so the F-statistic
-$$F=\frac{(SSR_r - SSR_{ur})(n-k-1)}{SSR_{ur}q}$$
-is adopted to test the significance.
+$$F=\frac{(R_{ur}^2 - R_r^2)(n-k-1)}{(1-R_{ur}^2)q}$$
+is adopted to test the significance. In the equation q is the number of variables different 
+between UR and R models, and k is the number of variables in UR model. Although $R^2$ is defined 
+in linear models, as the documentation of random forest regressor introduced, the `score` method 
+of it returns $R^2$. And this metric is adopted in this research.
 
 Todo: Estimate the effect, which the heteroscedasticity contributes to random forest models.
 
