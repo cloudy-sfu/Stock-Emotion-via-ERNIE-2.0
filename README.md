@@ -1,4 +1,4 @@
-# StockEmotion
+# Stock Emotion via ERNIE 2.0
 ![](https://img.shields.io/badge/build-developing-brightgreen)
 ![](https://img.shields.io/badge/tests-2020.8.14-orange)
 ![](https://img.shields.io/badge/dependencies-eastmoney.com-blue)
